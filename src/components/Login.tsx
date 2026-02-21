@@ -20,21 +20,30 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError('');
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const loginUrl = '/api/auth/login';
+      console.log('Fetching:', loginUrl, 'at origin:', window.location.origin);
+      const res = await fetch(loginUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        onLogin(data.token, data.user);
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await res.json();
+        if (res.ok) {
+          onLogin(data.token, data.user);
+        } else {
+          setError(data.error || 'Login failed');
+        }
       } else {
-        setError(data.error || 'Login failed');
+        const text = await res.text();
+        console.error('Non-JSON response:', text);
+        setError(`Server error: ${res.status} ${res.statusText}`);
       }
     } catch (err) {
-      setError('Connection error');
+      console.error('Login error:', err);
+      setError(`Connection error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }

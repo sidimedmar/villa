@@ -8,15 +8,20 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import multer from "multer";
 import fs from "fs";
+import cors from "cors";
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+console.log("Starting ImmoRIM Server...");
+console.log("Environment:", process.env.NODE_ENV);
+
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
+  console.log("Creating uploads directory...");
   fs.mkdirSync(uploadsDir);
 }
 
@@ -31,97 +36,112 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-const db = new Database("immorim.db");
+let db: Database.Database;
+try {
+  console.log("Initializing database...");
+  db = new Database("immorim.db");
+  console.log("Database initialized successfully.");
+} catch (error) {
+  console.error("Failed to initialize database:", error);
+  process.exit(1);
+}
+
 const JWT_SECRET = process.env.JWT_SECRET || "immorim-secret-key-2024";
 
 // Initialize Database Schema
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE,
-    password TEXT,
-    role TEXT, -- 'admin', 'operator'
-    status TEXT, -- 'active', 'inactive'
-    language TEXT DEFAULT 'fr',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+try {
+  console.log("Initializing database schema...");
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE,
+      password TEXT,
+      role TEXT, -- 'admin', 'operator'
+      status TEXT, -- 'active', 'inactive'
+      language TEXT DEFAULT 'fr',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
 
-  CREATE TABLE IF NOT EXISTS properties (
-    id TEXT PRIMARY KEY, -- PRP-XXXXXX
-    name TEXT,
-    province TEXT,
-    region TEXT,
-    status TEXT, -- 'rented', 'available', 'maintenance'
-    rent_amount REAL,
-    payment_status TEXT, -- 'paid', 'unpaid', 'overdue', 'doubtful'
-    type TEXT, -- 'apartment', 'villa', 'shop', 'office', 'warehouse'
-    area REAL,
-    rooms INTEGER,
-    description TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+    CREATE TABLE IF NOT EXISTS properties (
+      id TEXT PRIMARY KEY, -- PRP-XXXXXX
+      name TEXT,
+      province TEXT,
+      region TEXT,
+      status TEXT, -- 'rented', 'available', 'maintenance'
+      rent_amount REAL,
+      payment_status TEXT, -- 'paid', 'unpaid', 'overdue', 'doubtful'
+      type TEXT, -- 'apartment', 'villa', 'shop', 'office', 'warehouse'
+      area REAL,
+      rooms INTEGER,
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
 
-  CREATE TABLE IF NOT EXISTS tenants (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    whatsapp TEXT,
-    property_id TEXT,
-    payment_status TEXT,
-    id_card TEXT,
-    rating TEXT, -- 'excellent', 'good', 'average', 'bad'
-    notes TEXT,
-    FOREIGN KEY (property_id) REFERENCES properties(id)
-  );
+    CREATE TABLE IF NOT EXISTS tenants (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      whatsapp TEXT,
+      property_id TEXT,
+      payment_status TEXT,
+      id_card TEXT,
+      rating TEXT, -- 'excellent', 'good', 'average', 'bad'
+      notes TEXT,
+      FOREIGN KEY (property_id) REFERENCES properties(id)
+    );
 
-  CREATE TABLE IF NOT EXISTS payments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    property_id TEXT,
-    tenant_id INTEGER,
-    amount REAL,
-    date DATETIME DEFAULT CURRENT_TIMESTAMP,
-    operator_id INTEGER,
-    method TEXT, -- 'cash', 'bank', 'check', 'mobile'
-    status TEXT,
-    receipt_path TEXT,
-    FOREIGN KEY (property_id) REFERENCES properties(id),
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id),
-    FOREIGN KEY (operator_id) REFERENCES users(id)
-  );
+    CREATE TABLE IF NOT EXISTS payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      property_id TEXT,
+      tenant_id INTEGER,
+      amount REAL,
+      date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      operator_id INTEGER,
+      method TEXT, -- 'cash', 'bank', 'check', 'mobile'
+      status TEXT,
+      receipt_path TEXT,
+      FOREIGN KEY (property_id) REFERENCES properties(id),
+      FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+      FOREIGN KEY (operator_id) REFERENCES users(id)
+    );
 
-  CREATE TABLE IF NOT EXISTS maintenance (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    property_id TEXT,
-    type TEXT,
-    date DATETIME,
-    cost REAL,
-    status TEXT,
-    provider TEXT,
-    description TEXT,
-    FOREIGN KEY (property_id) REFERENCES properties(id)
-  );
+    CREATE TABLE IF NOT EXISTS maintenance (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      property_id TEXT,
+      type TEXT,
+      date DATETIME,
+      cost REAL,
+      status TEXT,
+      provider TEXT,
+      description TEXT,
+      FOREIGN KEY (property_id) REFERENCES properties(id)
+    );
 
-  CREATE TABLE IF NOT EXISTS contracts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    property_id TEXT,
-    tenant_id INTEGER,
-    start_date DATETIME,
-    end_date DATETIME,
-    terms TEXT,
-    status TEXT,
-    document_path TEXT,
-    FOREIGN KEY (property_id) REFERENCES properties(id),
-    FOREIGN KEY (tenant_id) REFERENCES tenants(id)
-  );
+    CREATE TABLE IF NOT EXISTS contracts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      property_id TEXT,
+      tenant_id INTEGER,
+      start_date DATETIME,
+      end_date DATETIME,
+      terms TEXT,
+      status TEXT,
+      document_path TEXT,
+      FOREIGN KEY (property_id) REFERENCES properties(id),
+      FOREIGN KEY (tenant_id) REFERENCES tenants(id)
+    );
 
-  CREATE TABLE IF NOT EXISTS operation_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type TEXT,
-    operator_id INTEGER,
-    details TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (operator_id) REFERENCES users(id)
-  );
-`);
+    CREATE TABLE IF NOT EXISTS operation_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT,
+      operator_id INTEGER,
+      details TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (operator_id) REFERENCES users(id)
+    );
+  `);
+  console.log("Database schema initialized.");
+} catch (error) {
+  console.error("Failed to initialize database schema:", error);
+}
 
 // Seed default admin if not exists
 const adminExists = db.prepare("SELECT * FROM users WHERE username = ?").get("admin");
@@ -132,7 +152,28 @@ if (!adminExists) {
 
 async function startServer() {
   const app = express();
+  app.use(cors());
   app.use(express.json());
+  
+  // Request logging
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+  });
+  
+  // Handle JSON parsing errors
+  app.use((err: any, req: any, res: any, next: any) => {
+    if (err instanceof SyntaxError && 'body' in err) {
+      console.error("JSON parse error:", err);
+      return res.status(400).json({ error: "Invalid JSON" });
+    }
+    next();
+  });
+
+  // Health check
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", env: process.env.NODE_ENV, time: new Date().toISOString() });
+  });
 
   // Auth Middleware
   const authenticateToken = (req: any, res: any, next: any) => {
@@ -151,16 +192,29 @@ async function startServer() {
 
   // Auth
   app.post("/api/auth/login", (req, res) => {
+    console.log("Login attempt for user:", req.body.username);
     const { username, password } = req.body;
-    const user: any = db.prepare("SELECT * FROM users WHERE username = ?").get(username);
-    if (!user || !bcrypt.compareSync(password, user.password)) {
-      return res.status(401).json({ error: "Invalid credentials" });
+    try {
+      const user: any = db.prepare("SELECT * FROM users WHERE username = ?").get(username);
+      if (!user) {
+        console.log("User not found:", username);
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      if (!bcrypt.compareSync(password, user.password)) {
+        console.log("Invalid password for user:", username);
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      if (user.status !== 'active') {
+        console.log("Account disabled for user:", username);
+        return res.status(403).json({ error: "Account disabled" });
+      }
+      const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET);
+      console.log("Login successful for user:", username);
+      res.json({ token, user: { id: user.id, username: user.username, role: user.role, language: user.language } });
+    } catch (error) {
+      console.error("Login error in server:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
-    if (user.status !== 'active') {
-      return res.status(403).json({ error: "Account disabled" });
-    }
-    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET);
-    res.json({ token, user: { id: user.id, username: user.username, role: user.role, language: user.language } });
   });
 
   // Users
@@ -360,6 +414,18 @@ async function startServer() {
   });
 
   app.use("/uploads", express.static(uploadsDir));
+
+  // Catch-all for API routes that don't match
+  app.all("/api/*", (req, res) => {
+    console.log(`404 API - ${req.method} ${req.url}`);
+    res.status(404).json({ error: "API route not found" });
+  });
+
+  // Global Error Handler
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error("Global error handler:", err);
+    res.status(500).json({ error: "Internal server error", details: err.message });
+  });
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
