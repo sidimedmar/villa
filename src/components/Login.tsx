@@ -39,7 +39,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       } else {
         const text = await res.text();
         console.error('Non-JSON response:', text);
-        setError(`Server error: ${res.status} ${res.statusText}`);
+        if (res.status === 404) {
+          setError('API not found. If you are on Netlify, please note that ImmoRIM requires a Node.js server (like Render or Railway) to run the backend.');
+        } else {
+          setError(`Server error: ${res.status} ${res.statusText}`);
+        }
       }
     } catch (err) {
       console.error('Login error:', err);
@@ -47,6 +51,16 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDemoMode = () => {
+    const demoUser = {
+      id: 0,
+      username: 'demo_user',
+      role: 'admin',
+      language: 'fr'
+    };
+    onLogin('demo-token', demoUser);
   };
 
   return (
@@ -99,13 +113,22 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
 
             {error && (
-              <motion.p 
+              <motion.div 
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="text-error text-sm font-bold text-center bg-error/10 py-2 rounded-lg"
+                className="text-error text-sm font-bold text-center bg-error/10 p-4 rounded-xl border border-error/20"
               >
-                {error}
-              </motion.p>
+                <p>{error}</p>
+                {error.includes('Netlify') && (
+                  <button 
+                    type="button"
+                    onClick={handleDemoMode}
+                    className="block mt-2 mx-auto font-bold underline hover:text-error/80"
+                  >
+                    Essayer le Mode Démo (Sans Serveur)
+                  </button>
+                )}
+              </motion.div>
             )}
 
             <button
@@ -122,7 +145,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </button>
           </form>
 
-          <div className="mt-10 pt-8 border-t border-slate-800 flex items-center justify-center gap-4">
+          <div className="mt-10 pt-8 border-t border-slate-800 flex flex-col items-center gap-6">
+            <button
+              onClick={handleDemoMode}
+              className="text-slate-500 hover:text-accent text-sm font-medium transition-colors"
+            >
+              Accéder en mode démonstration
+            </button>
             <button
               onClick={() => setLanguage(language === 'fr' ? 'ar' : 'fr')}
               className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-full transition-all text-sm font-medium text-slate-300"
