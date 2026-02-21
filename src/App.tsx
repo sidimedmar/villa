@@ -17,7 +17,9 @@ import {
   LogOut, 
   Menu, 
   X,
-  Globe
+  Globe,
+  Wrench,
+  FileCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -35,6 +37,9 @@ import Tenants from './components/Tenants';
 import Payments from './components/Payments';
 import WhatsAppModule from './components/WhatsAppModule';
 import MapView from './components/MapView';
+import Reports from './components/Reports';
+import Maintenance from './components/Maintenance';
+import Contracts from './components/Contracts';
 import UserManagement from './components/UserManagement';
 import Login from './components/Login';
 
@@ -69,10 +74,12 @@ const AppContent = () => {
     { id: 'properties', icon: Building2, label: t('common.properties') },
     { id: 'tenants', icon: Users, label: t('common.tenants') },
     { id: 'payments', icon: CreditCard, label: t('common.payments') },
+    { id: 'contracts', icon: FileCheck, label: t('common.contracts') },
+    { id: 'maintenance', icon: Wrench, label: t('common.maintenance') },
     { id: 'whatsapp', icon: MessageSquare, label: t('common.whatsapp') },
     { id: 'map', icon: MapIcon, label: t('common.map') },
-    { id: 'users', icon: UserCog, label: t('common.users'), adminOnly: true },
     { id: 'reports', icon: FileText, label: t('common.reports') },
+    { id: 'users', icon: UserCog, label: t('common.users'), adminOnly: true },
   ].filter(item => !item.adminOnly || user.role === 'admin');
 
   return (
@@ -197,10 +204,12 @@ const AppContent = () => {
               {activeTab === 'properties' && <Properties />}
               {activeTab === 'tenants' && <Tenants />}
               {activeTab === 'payments' && <Payments />}
+              {activeTab === 'contracts' && <Contracts />}
+              {activeTab === 'maintenance' && <Maintenance />}
               {activeTab === 'whatsapp' && <WhatsAppModule />}
               {activeTab === 'map' && <MapView />}
               {activeTab === 'users' && <UserManagement />}
-              {activeTab === 'reports' && <div className="text-center py-20 text-slate-500 italic">Module de rapports en cours de développement...</div>}
+              {activeTab === 'reports' && <Reports />}
             </motion.div>
           </AnimatePresence>
         </div>

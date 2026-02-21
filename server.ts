@@ -279,6 +279,80 @@ async function startServer() {
     });
   });
 
+  // Maintenance
+  app.get("/api/maintenance", authenticateToken, (req, res) => {
+    const records = db.prepare(`
+      SELECT m.*, p.name as property_name 
+      FROM maintenance m 
+      JOIN properties p ON m.property_id = p.id
+    `).all();
+    res.json(records);
+  });
+
+  app.post("/api/maintenance", authenticateToken, (req, res) => {
+    const { property_id, type, date, cost, status, provider, description } = req.body;
+    db.prepare(`INSERT INTO maintenance (property_id, type, date, cost, status, provider, description) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)`).run(property_id, type, date, cost, status, provider, description);
+    res.status(201).json({ message: "Maintenance record created" });
+  });
+
+  // Contracts
+  app.get("/api/contracts", authenticateToken, (req, res) => {
+    const records = db.prepare(`
+      SELECT c.*, p.name as property_name, t.name as tenant_name 
+      FROM contracts c 
+      JOIN properties p ON c.property_id = p.id
+      JOIN tenants t ON c.tenant_id = t.id
+    `).all();
+    res.json(records);
+  });
+
+  app.post("/api/contracts", authenticateToken, (req, res) => {
+    const { property_id, tenant_id, start_date, end_date, terms, status, document_path } = req.body;
+    db.prepare(`INSERT INTO contracts (property_id, tenant_id, start_date, end_date, terms, status, document_path) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)`).run(property_id, tenant_id, start_date, end_date, terms, status, document_path);
+    res.status(201).json({ message: "Contract created" });
+  });
+
+  // Reports Data
+  app.get("/api/reports/summary", authenticateToken, (req, res) => {
+    const revenueByMonth = db.prepare(`
+      SELECT strftime('%Y-%m', date) as month, SUM(amount) as total 
+      FROM payments 
+      WHERE status = 'paid'
+      GROUP BY month 
+      ORDER BY month DESC 
+      LIMIT 12
+    `).all();
+
+    const debtByProvince = db.prepare(`
+      SELECT province, SUM(rent_amount) as total_debt 
+      FROM properties 
+      WHERE status = 'rented' AND payment_status != 'paid'
+      GROUP BY province
+    `).all();
+
+    const occupancyStats = db.prepare(`
+      SELECT status, COUNT(*) as count 
+      FROM properties 
+      GROUP BY status
+    `).all();
+
+    const paymentStatusStats = db.prepare(`
+      SELECT payment_status, COUNT(*) as count 
+      FROM properties 
+      WHERE status = 'rented'
+      GROUP BY payment_status
+    `).all();
+
+    res.json({
+      revenueByMonth,
+      debtByProvince,
+      occupancyStats,
+      paymentStatusStats
+    });
+  });
+
   // File Upload
   app.post("/api/upload", authenticateToken, upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });

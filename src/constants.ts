@@ -9,6 +9,8 @@ export const translations = {
       map: "Carte",
       users: "Utilisateurs",
       reports: "Rapports",
+      maintenance: "Maintenance",
+      contracts: "Contrats",
       settings: "Paramètres",
       logout: "Déconnexion",
       add: "Ajouter",
@@ -97,6 +99,30 @@ export const translations = {
       sendReminder: "Envoyer Rappel",
       messageTemplates: "Modèles de Messages",
       clientsByStatus: "Clients par Statut",
+    },
+    reports: {
+      revenueTrend: "Tendance des Revenus",
+      debtByProvince: "Dette par Wilaya",
+      occupancyRate: "Taux d'Occupation",
+      paymentDistribution: "Distribution des Paiements",
+      exportData: "Exporter les Données",
+      monthlyRevenue: "Revenu Mensuel",
+    },
+    maintenance: {
+      provider: "Prestataire",
+      cost: "Coût",
+      type: "Type d'Intervention",
+      date: "Date",
+      addRecord: "Nouvelle Intervention",
+    },
+    contracts: {
+      startDate: "Date de Début",
+      endDate: "Date de Fin",
+      terms: "Conditions",
+      addContract: "Nouveau Contrat",
+      active: "Actif",
+      expired: "Expiré",
+      terminated: "Terminé",
     }
   },
   ar: {
@@ -197,6 +223,30 @@ export const translations = {
       sendReminder: "إرسال تذكير",
       messageTemplates: "قوالب الرسائل",
       clientsByStatus: "العملاء حسب الحالة",
+    },
+    reports: {
+      revenueTrend: "اتجاه الإيرادات",
+      debtByProvince: "الديون حسب الولاية",
+      occupancyRate: "معدل الإشغال",
+      paymentDistribution: "توزيع المدفوعات",
+      exportData: "تصدير البيانات",
+      monthlyRevenue: "الدخل الشهري",
+    },
+    maintenance: {
+      provider: "المزود",
+      cost: "التكلفة",
+      type: "نوع التدخل",
+      date: "التاريخ",
+      addRecord: "تدخل جديد",
+    },
+    contracts: {
+      startDate: "تاريخ البدء",
+      endDate: "تاريخ الانتهاء",
+      terms: "الشروط",
+      addContract: "عقد جديد",
+      active: "نشط",
+      expired: "منتهي",
+      terminated: "ملغى",
     }
   }
 };
