@@ -1,0 +1,7 @@
+{
+  "name": "ImmoRIM - Gestion Immobilière",
+  "description": "Système complet de gestion immobilière pour la Mauritanie avec support bilingue Arabe/Français, suivi des paiements, gestion des locataires et intégration WhatsApp.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
